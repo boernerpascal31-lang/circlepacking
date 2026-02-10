@@ -33,7 +33,14 @@ int main(void)
     /* radii (matching your Gurobi example: 13,13,8,8,8,8,8,4,4,4,4,4,4,4) */
     SCIP_Real rvals[14] = {13.0, 13.0, 8.0, 8.0, 8.0, 8.0, 8.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0};
 
+    /* LB */
+    SCIP_Real pi = 3.1459;
+    SCIP_Real LB = 0.0;
     int i, j;
+    for( i = 0; i < ncircles; ++i )
+    {
+        LB += pi * rvals[i] * rvals[i];
+    }
 
     /* create SCIP environment and include default plugins */
     SCIP_CALL( SCIPcreate(&scip) );
@@ -44,6 +51,7 @@ int main(void)
 
     /* output detailed information on model options and objective */
     SCIPinfoMessage(scip, NULL, "Creating problem.\n");
+    SCIPinfoMessage(scip, NULL, "Lower bound on area: %g\n", LB);
 
     /* create empty problem */
     SCIP_CALL( SCIPcreateProbBasic(scip, "optimal_circle_packing") );
@@ -75,7 +83,7 @@ int main(void)
     SCIP_CALL( SCIPaddVar(scip, h) );
 
     /* area variable: objective variable (a = w*h will be enforced by a quadratic constraint) */
-    SCIP_CALL( SCIPcreateVarBasic(scip, &a, "area", 0.0, SCIPinfinity(scip), 1.0, SCIP_VARTYPE_CONTINUOUS) );
+    SCIP_CALL( SCIPcreateVarBasic(scip, &a, "area", LB, SCIPinfinity(scip), 1.0, SCIP_VARTYPE_CONTINUOUS) );
     SCIP_CALL( SCIPaddVar(scip, a) );
 
     /* linear boundary constraints to keep circles within [r_i, w-r_i] and [r_i, h-r_i] */
