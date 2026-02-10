@@ -10,7 +10,7 @@
 
 
 
-#define useINIT
+//#define useINIT
 //#define CUT_OFF
 
 #include <stdio.h>
@@ -38,7 +38,7 @@ int main(void)
     /* create SCIP environment and include default plugins */
     SCIP_CALL( SCIPcreate(&scip) );
     SCIP_CALL( SCIPincludeDefaultPlugins(scip) );
-    SCIP_CALL( SCIPsetIntParam(scip, "display/verblevel", 1) );
+    SCIP_CALL( SCIPsetIntParam(scip, "display/verblevel", 5) );
     SCIP_CALL( SCIPsetIntParam(scip, "display/freq", 100) );
 
 
@@ -207,6 +207,8 @@ int main(void)
 
     /* output detailed information on model options and objective */
     SCIPinfoMessage(scip, NULL, "Solving problem.\n");
+    /* Transform problem before solve */
+    SCIP_CALL( SCIPtransformProb(scip) );
     /* solve */
     SCIP_CALL( SCIPsolve(scip) );
 
