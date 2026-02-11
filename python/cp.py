@@ -61,6 +61,34 @@ for i in range(len(circles)):
 model.addCons(x_max * y_max <= obj)
 model.setObjective(obj, "minimize")
 
+# -------------------------
+# Symmetry breaking: enforce lexicographic ordering of circle centers for circles with equal radii
+# -------------------------
+# Build indexable lists for convenience (do NOT change existing `circles`)
+xvars = [c[0] for c in circles]
+yvars = [c[1] for c in circles]
+
+# group indices by equal radii
+groups_of_equal_radii = {}
+for i, r in enumerate(radii):
+    groups_of_equal_radii.setdefault(r, []).append(i)
+
+# Lexicographic ordering in x for equal radii groups
+# and a secondary tie-breaker on y using big-M to avoid strict nonlinear lexicographic constraints
+BIGM = 800.0  # safe given your x_max/y_max <= 800
+
+for indices in groups_of_equal_radii.values():
+    if len(indices) <= 1:
+        continue
+    # enforce x_i <= x_j for consecutive indices in the group
+    for i, j in zip(indices[:-1], indices[1:]):
+        model.addCons(xvars[i] <= xvars[j])
+    # optional: tie-break on y when x are equal (relaxed lexicographic)
+    for i, j in zip(indices[:-1], indices[1:]):
+        # y_i <= y_j + BIGM*(x_j - x_i)
+        # if x_j > x_i, RHS large and constraint inactive; if x_j == x_i, it enforces y_i <= y_j.
+        model.addCons(yvars[i] <= yvars[j] + BIGM * (xvars[j] - xvars[i]))
+
 # parameters
 # time limit: SCIP parameter name is 'limits/time' (seconds)
 model.setParam('limits/time', 40000.0)
