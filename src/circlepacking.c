@@ -11,6 +11,8 @@
 
 
 //#define useINIT
+//#define useINIT2
+#define useOrig
 //#define CUT_OFF
 
 #include <stdio.h>
@@ -29,9 +31,19 @@ int main(void)
     SCIP_VAR **x = NULL, **y = NULL;
     SCIP_VAR *w = NULL, *h = NULL, *a = NULL; /* width, height, area */
     SCIP_CONS* cons = NULL;
-    const int ncircles = 14;
+#ifndef useOrig    
+    int ncircles = 14;
     /* radii (matching your Gurobi example: 13,13,8,8,8,8,8,4,4,4,4,4,4,4) */
     SCIP_Real rvals[14] = {13.0, 13.0, 8.0, 8.0, 8.0, 8.0, 8.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0};
+#else
+    int ncircles = 28;
+    SCIP_Real rvals[28] = {
+    65.0, 65.0, 40.0, 40.0, 40.0, 40.0, 40.0,
+    20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0,
+    10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0,
+    10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0
+};
+#endif
 
     /* LB */
     SCIP_Real pi = 3.1459;
@@ -68,18 +80,18 @@ int main(void)
     {
         char name[64];
         SCIPsnprintf(name, sizeof(name), "x_%d", i);
-        SCIP_CALL( SCIPcreateVarBasic(scip, &x[i], name, 0.0, 80.0, 0.0, SCIP_VARTYPE_CONTINUOUS) );
+        SCIP_CALL( SCIPcreateVarBasic(scip, &x[i], name, 0.0, 800.0, 0.0, SCIP_VARTYPE_CONTINUOUS) );
         SCIP_CALL( SCIPaddVar(scip, x[i]) );
 
         SCIPsnprintf(name, sizeof(name), "y_%d", i);
-        SCIP_CALL( SCIPcreateVarBasic(scip, &y[i], name, 0.0, 80.0, 0.0, SCIP_VARTYPE_CONTINUOUS) );
+        SCIP_CALL( SCIPcreateVarBasic(scip, &y[i], name, 0.0, 800.0, 0.0, SCIP_VARTYPE_CONTINUOUS) );
         SCIP_CALL( SCIPaddVar(scip, y[i]) );
     }
 
     /* create width (w), height (h) and area (a) variables */
-    SCIP_CALL( SCIPcreateVarBasic(scip, &w, "x_max", 0.0, 80.0, 0.0, SCIP_VARTYPE_CONTINUOUS) );
+    SCIP_CALL( SCIPcreateVarBasic(scip, &w, "x_max", 0.0, 800.0, 0.0, SCIP_VARTYPE_CONTINUOUS) );
     SCIP_CALL( SCIPaddVar(scip, w) );
-    SCIP_CALL( SCIPcreateVarBasic(scip, &h, "y_max", 0.0, 80.0, 0.0, SCIP_VARTYPE_CONTINUOUS) );
+    SCIP_CALL( SCIPcreateVarBasic(scip, &h, "y_max", 0.0, 800.0, 0.0, SCIP_VARTYPE_CONTINUOUS) );
     SCIP_CALL( SCIPaddVar(scip, h) );
 
     /* area variable: objective variable (a = w*h will be enforced by a quadratic constraint) */
@@ -120,11 +132,11 @@ int main(void)
     }
 
     /* enforce w <= 80 and h <= 80 explicitly (vars already have ub = 80, but we keep these to match your model) */
-    SCIP_CALL( SCIPcreateConsBasicLinear(scip, &cons, "w_ub", 1, &w, & (SCIP_Real){1.0}, -SCIPinfinity(scip), 80.0) );
+    SCIP_CALL( SCIPcreateConsBasicLinear(scip, &cons, "w_ub", 1, &w, & (SCIP_Real){1.0}, -SCIPinfinity(scip), 800.0) );
     SCIP_CALL( SCIPaddCons(scip, cons) );
     SCIP_CALL( SCIPreleaseCons(scip, &cons) );
 
-    SCIP_CALL( SCIPcreateConsBasicLinear(scip, &cons, "h_ub", 1, &h, & (SCIP_Real){1.0}, -SCIPinfinity(scip), 80.0) );
+    SCIP_CALL( SCIPcreateConsBasicLinear(scip, &cons, "h_ub", 1, &h, & (SCIP_Real){1.0}, -SCIPinfinity(scip), 800.0) );
     SCIP_CALL( SCIPaddCons(scip, cons) );
     SCIP_CALL( SCIPreleaseCons(scip, &cons) );
 
@@ -206,6 +218,53 @@ int main(void)
             SCIPinfoMessage(scip, NULL, "initial solution not stored\n");
     }
 #endif
+#ifdef useINIT2
+    {
+        SCIP_SOL* sol = NULL;
+        SCIP_Bool stored = FALSE;
+
+        /* start coordinates extracted from your JSON (order matches rvals) */
+        SCIP_Real start_coords[28][2] = {
+            {117.0, 174.0}, {302.0, 174.0}, {209.0, 116.0}, {91.0, 46.0},  {328.0, 46.0},  {249.0, 47.0},  {170.0, 46.0},
+            {192.0, 213.0}, {130.0, 91.0},  {231.0, 219.0}, {289.0, 91.0},  {72.0, 103.0},  {347.0, 102.0}, {201.0, 175.0},
+            {62.0, 224.0},  {358.0, 223.0}, {318.0, 94.0},  {210.0, 17.0},  {258.0, 114.0}, {131.0, 16.0},  {229.0, 161.0},
+            {159.0, 94.0},  {160.0, 113.0}, {167.0, 229.0}, {288.0, 16.0},  {260.0, 95.0},  {229.0, 189.0}, {101.0, 94.0}
+        };
+
+        /* choose w/h so that x_i + r_i <= w and y_i + r_i <= h for all circles.
+         * These are computed from the solution: w = max(x+radius) = 368.0,
+         * h = max(y+radius) = 239.0
+         */
+        SCIP_Real wstart = 368.0;
+        SCIP_Real hstart = 239.0;
+        SCIP_Real astart = wstart * hstart; /* = 87952.0 */
+
+        SCIP_CALL( SCIPcreateSol(scip, &sol, NULL) );
+        for( i = 0; i < ncircles; ++i )
+        {
+            SCIP_CALL( SCIPsetSolVal(scip, sol, x[i], start_coords[i][0]) );
+            SCIP_CALL( SCIPsetSolVal(scip, sol, y[i], start_coords[i][1]) );
+        }
+
+        /* set rectangle sizes and area (important: set area = w*h) */
+        SCIP_CALL( SCIPsetSolVal(scip, sol, w, wstart) );
+        SCIP_CALL( SCIPsetSolVal(scip, sol, h, hstart) );
+        SCIP_CALL( SCIPsetSolVal(scip, sol, a, astart) );
+
+        /* If you transform the problem before trying to add the solution, keep this call.
+         * (Some examples call SCIPtransformProb(scip) earlier in the program lifecycle.)
+         */
+        SCIP_CALL( SCIPtransformProb(scip) );
+
+        /* try to add solution (free after try) */
+        SCIP_CALL( SCIPtrySolFree(scip, &sol, TRUE, FALSE, TRUE, TRUE, TRUE, &stored) );
+        if( stored )
+            SCIPinfoMessage(scip, NULL, "initial solution accepted\n");
+        else
+            SCIPinfoMessage(scip, NULL, "initial solution not stored\n");
+    }
+#endif
+
 
     SCIP_CALL( SCIPwriteOrigProblem(scip, "circle_packing.cip", "cip", FALSE) );
 

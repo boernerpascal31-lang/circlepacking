@@ -15,7 +15,9 @@ from matplotlib.patches import Circle
 model = Model("optimal_circle_packing")
 
 # circle centers and radii
-radii = [13, 13, 8, 8, 8, 8, 8, 4, 4, 4, 4, 4, 4, 4]
+#radii = [13, 13, 8, 8, 8, 8, 8, 4, 4, 4, 4, 4, 4, 4]
+#radii = [13, 13, 8, 8, 8, 8, 8, 4, 4, 4, 4, 4, 4, 4,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+radii = [65, 65, 40, 40, 40, 40, 40, 20, 20, 20, 20, 20, 20, 20, 10, 10, 10, 10, 10, 10, 10]
 circles = []
 for i, r in enumerate(radii):
     xi = model.addVar(f"x_{i}", lb=0.0)
@@ -33,7 +35,7 @@ print("Lower bound on area:", LB)
 # variables (give nonnegative lower bounds to help solver)
 x_max = model.addVar("x_max", lb=0.0)
 y_max = model.addVar("y_max", lb=0.0)
-obj = model.addVar("obj", lb=LB, ub=3500)
+obj = model.addVar("obj", lb=LB)
 
 # constraints to keep circles within bounds
 for xi, yi, r in circles:
@@ -42,8 +44,8 @@ for xi, yi, r in circles:
     model.addCons(yi - r >= 0.0)
     model.addCons(yi + r <= y_max)
 
-model.addCons(x_max <= 80.0)
-model.addCons(y_max <= 80.0)
+model.addCons(x_max <= 800.0)
+model.addCons(y_max <= 800.0)
 
 # constraints to prevent circle overlap (nonlinear)
 for i in range(len(circles)):
