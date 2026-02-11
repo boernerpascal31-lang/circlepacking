@@ -15,9 +15,9 @@ from matplotlib.patches import Circle
 model = Model("optimal_circle_packing")
 
 # circle centers and radii
-#radii = [13, 13, 8, 8, 8, 8, 8, 4, 4, 4, 4, 4, 4, 4]
+radii = [13, 13, 8, 8, 8, 8, 8, 4, 4, 4, 4, 4, 4, 4]
 #radii = [13, 13, 8, 8, 8, 8, 8, 4, 4, 4, 4, 4, 4, 4,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
-radii = [65, 65, 40, 40, 40, 40, 40, 20, 20, 20, 20, 20, 20, 20, 10, 10, 10, 10, 10, 10, 10]
+#radii = [65, 65, 40, 40, 40, 40, 40, 20, 20, 20, 20, 20, 20, 20, 10, 10, 10, 10, 10, 10, 10]
 circles = []
 for i, r in enumerate(radii):
     xi = model.addVar(f"x_{i}", lb=0.0)
@@ -83,11 +83,7 @@ for indices in groups_of_equal_radii.values():
     # enforce x_i <= x_j for consecutive indices in the group
     for i, j in zip(indices[:-1], indices[1:]):
         model.addCons(xvars[i] <= xvars[j])
-    # optional: tie-break on y when x are equal (relaxed lexicographic)
-    for i, j in zip(indices[:-1], indices[1:]):
-        # y_i <= y_j + BIGM*(x_j - x_i)
-        # if x_j > x_i, RHS large and constraint inactive; if x_j == x_i, it enforces y_i <= y_j.
-        model.addCons(yvars[i] <= yvars[j] + BIGM * (xvars[j] - xvars[i]))
+
 
 # parameters
 # time limit: SCIP parameter name is 'limits/time' (seconds)
